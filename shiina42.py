@@ -54,9 +54,9 @@ def validate_checksum(debug):
 
 
 ##############################################
-####									  ####
-###			START LOGGING FUNCTIONS		   ###
-####									  ####
+####                                      ####
+###         START LOGGING FUNCTIONS        ###
+####                                      ####
 ##############################################
 
 # Pretty Debug Formatting
@@ -77,10 +77,10 @@ def log(data):
 		f.write(format(data))
 
 ##############################################
-####									  ####
-### 		END LOGGING FUNCTIONS		   ###
-###			START SETUP FUNCTIONS		   ###
-####									  ####
+####                                      ####
+###         END LOGGING FUNCTIONS          ###
+###         START SETUP FUNCTIONS          ###
+####                                      ####
 ##############################################
 
 # Runs startup functions
@@ -174,10 +174,10 @@ def connect():
 
 
 ##############################################
-####									  ####
-### 		END SETUP FUNCTIONS			   ###
-###			START UTIL FUNCTIONS		   ###
-####									  ####
+####                                      ####
+###         END SETUP FUNCTIONS            ###
+###         START UTIL FUNCTIONS           ###
+####                                      ####
 ##############################################
 
 # Returns Base16 time-stamp
@@ -288,10 +288,10 @@ def chat(channel, msg):
 		None
 
 ##############################################
-####									  ####
-### 		END UTIL FUNCTIONS			   ###
-###			START COMMAND FUNCTIONS		   ###
-####									  ####
+####                                      ####
+###           END UTIL FUNCTIONS           ###
+###         START COMMAND FUNCTIONS        ###
+####                                      ####
 ##############################################
 
 # Sends a new mail from sender to recipient
@@ -428,10 +428,10 @@ def get_twitter_feed(sender):
 
 
 ##############################################
-####									  ####
-### 		END COMMAND FUNCTIONS		   ###
-###			START EXEC FUNCTIONS		   ###
-####									  ####
+####                                      ####
+###         END COMMAND FUNCTIONS          ###
+###         START EXEC FUNCTIONS           ###
+####                                      ####
 ##############################################
 
 def loop():
@@ -511,10 +511,10 @@ def run():
 			continue
 
 ##############################################
-####									  ####
-### 		END EXEC FUNCTIONS			   ###
-###			START FUNCTION CALLS		   ###
-####									  ####
+####                                      ####
+###          END EXEC FUNCTIONS            ###
+###         START FUNCTION CALLS           ###
+####                                      ####
 ##############################################
 
 run()
