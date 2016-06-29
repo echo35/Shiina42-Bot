@@ -5,3 +5,8 @@ IRC-Based Polyfunctional Bot written in Python 2.7
 - [socks.py](https://github.com/Anorov/PySocks/blob/master/socks.py)
 - [tweepy](https://github.com/tweepy/tweepy) `# pip2.7 install tweepy`
 - [imgurpython](https://github.com/Imgur/imgurpython) `# pip2.7 install imgurpython`
+
+### TODO:
+- [ ] Implement `*-enabled = "NO"` configuration
+- [ ] Configure DAT file through IRC chat
+- [ ] Make Shiina42 do stuff
