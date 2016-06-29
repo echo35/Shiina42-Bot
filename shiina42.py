@@ -1,6 +1,8 @@
 #!/usr/bin/env python2
 
-# @v_sha512 'd03bf42ef22f87c597229340832c5aabde1ffe519e9c628b58d798b3b6c23a81599a246715605b132fa48f6b284534e7a975d44d28f5e8bf472803f62c2c4c53'
+# AUTHOR: Kagami95 (https://github.com/Kagami95)
+
+# @v_sha512 '24d3d2b6076f0ba6d8d83836ad2978fa7262e5c10f7beaa28de5125f21177ff720d618d1e0acc5cd4fb6c51ecd84d57442b517358b3b5eb779c6acd58defc047'
 import time, socket, os, ssl, socks, hashlib, re, select, tweepy
 from datetime import datetime
 from imgurpython import ImgurClient
@@ -10,7 +12,7 @@ bot_name = 'shiina42'
 debug_enabled = True
 data_map = {}
 config_options = {}
-default_config = [ '# Shiina42 is a polyfunctional bot developped by Kagami95. http://github.com/Kagami95\n\n', '\n# General Configuration\n' 'creator = ""\n', 'tor_enabled = "NO"\n', '\n# IRC Configuration\n', 'irc_enabled = "YES"\n', 'irc_server = ""\n', 'irc_port = 6697\n', 'irc_channel = "#"\n', 'irc_nickname = ""\n', 'irc_password = ""\n', '\n# Twitter Configuration\n', 'twitter_enabled = "YES"\n', 'twitter_DM_interval = 60000\n' 'twitter_ckey = ""\n', 'twitter_secret = ""\n', 'twitter_atoken = ""\n', 'twitter_atoken_secret = ""\n', '\n# Imgur Configuration\n', 'imgur_enabled = "YES"\n', 'imgur_id = ""\n', 'imgur_secret = ""\n']
+default_config = [ '# Shiina42 is a polyfunctional bot developped by Kagami95. http://github.com/Kagami95\n\n', '\n# General Configuration\n' 'creator = ""\n', 'tor_enabled = "NO"\n', '\n# IRC Configuration\n', 'irc_enabled = "YES"\n', 'irc_server = ""\n', 'irc_port = 6697\n', 'irc_channel = "#"\n', 'irc_nickname = ""\n', 'irc_password = ""\n', '\n# Twitter Configuration\n', 'twitter_enabled = "NO"\n', 'twitter_DM_interval = 60000\n' 'twitter_ckey = ""\n', 'twitter_secret = ""\n', 'twitter_atoken = ""\n', 'twitter_atoken_secret = ""\n', '\n# Imgur Configuration\n', 'imgur_enabled = "NO"\n', 'imgur_id = ""\n', 'imgur_secret = ""\n']
 
 # IRC-Bot Variables
 mail_list = {}
