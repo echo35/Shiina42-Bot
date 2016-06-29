@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-# @v_sha512 '42e1ae58ec7e1f754e0c42b385bbfe1f0dbe16aa5be9e9ffd2dcdd546306367f98e1e85a13a7306ae366538609a9e65920e780950c40b7ff1e9989609e5f2097'
+# @v_sha512 'd03bf42ef22f87c597229340832c5aabde1ffe519e9c628b58d798b3b6c23a81599a246715605b132fa48f6b284534e7a975d44d28f5e8bf472803f62c2c4c53'
 import time, socket, os, ssl, socks, hashlib, re, select, tweepy
 from datetime import datetime
 from imgurpython import ImgurClient
@@ -485,7 +485,7 @@ def loop():
 def run():
 	if not validate_checksum(True):
 		print "Invalid Checksum! Quitting..."
-		# exit(1)
+		exit(1)
 	print "Checksum Validation Succeeded"
 	global irc_socket
 	init()
