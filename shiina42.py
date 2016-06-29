@@ -2,7 +2,7 @@
 
 # AUTHOR: Kagami95 (https://github.com/Kagami95)
 
-# @v_sha512 '24d3d2b6076f0ba6d8d83836ad2978fa7262e5c10f7beaa28de5125f21177ff720d618d1e0acc5cd4fb6c51ecd84d57442b517358b3b5eb779c6acd58defc047'
+# @v_sha512 '75e6758354a00d8706e846b7ae0f0afca81d18b284608ff4adc1c389a002db4bb84b79f4b451b5f991218c7769df8f39c9d49f81fb1677481c10f8fff0eab48a'
 import time, socket, os, ssl, socks, hashlib, re, select, tweepy
 from datetime import datetime
 from imgurpython import ImgurClient
