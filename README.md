@@ -8,5 +8,5 @@ IRC-Based Polyfunctional Bot written in Python 2.7
 
 ### TODO:
 - [ ] Implement `*-enabled = "NO"` configuration
-- [ ] Configure DAT file through IRC chat
+- [x] Configure DAT file through IRC chat
 - [ ] Make Shiina42 do stuff
