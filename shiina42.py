@@ -1,8 +1,8 @@
 #!/usr/bin/env python2
 
 # AUTHOR: Kagami95 (https://github.com/Kagami95)
+# @v_sha512 'cd4f2fb4aacf1366859e95a1d9c3bcd6d8465a2a3815b31034f38fed2501816b3929610d88640e124f5f16f89608b27ec2b41027120b600e24a73ff50a612550'
 
-# @v_sha512 '75e6758354a00d8706e846b7ae0f0afca81d18b284608ff4adc1c389a002db4bb84b79f4b451b5f991218c7769df8f39c9d49f81fb1677481c10f8fff0eab48a'
 import time, socket, os, ssl, socks, hashlib, re, select, tweepy
 from datetime import datetime
 from imgurpython import ImgurClient
@@ -111,7 +111,7 @@ def create_config():
 #		info[0] = True
 		# info.append(bot_name + '.dat')
 		with open('%s.dat' % bot_name, 'w') as file:
-			data_map = {'last_twitter_DM' : 0}
+			data_map = {'twitter_subs': {}, 'last_twitter_DM' : 0}
 			file.write(str(data_map))
 	if not os.path.exists(bot_name + '.mail'):
 #		info[0] = True
@@ -367,6 +367,9 @@ def parse_cmd(sender, destination, message):
 				chat(sender, "%s most recent tweet by @%s: %s" % (ordinal, username, tweet.text.encode('utf-8')))
 		elif simplify(message) == 'tf': # ".tf" twitter feed
 			get_twitter_feed(sender)
+		elif simplify(message)[:2] == 'tf': # Missed previous conditional, therefore has arguments
+			args = message.split()[1:]
+			update_tf_config(sender, args)
 		elif simplify(message)[:2] == 'dm': # ".dm" Direct Message (Twitter)
 			if is_op(sender):
 				if simplify(message) == "dm":
@@ -397,24 +400,37 @@ def parse_cmd(sender, destination, message):
 # Sends help dialogue to sender
 def send_help_dialogue(sender):
 	chat(sender, 'Here is a list of what I can do:')
+	time.sleep(0.25)
 	chat(sender, '--Passive Functions--')
+	time.sleep(0.25)
 	chat(sender, '    Automatic inbox relaying on joining main channel')
+	time.sleep(0.25)
 	chat(sender, '--Active Functions--')
+	time.sleep(0.25)
 	chat(sender, '    .ping               - I will respond with "Pong" if I am online.')
+	time.sleep(0.25)
 	chat(sender, '    .tf                 - I will compose and send you your twitter feed as defined in the configuration file.')
+	time.sleep(0.25)
+	chat(sender, '    .tf <[@]user> <i>.. - For each <user> provided, I will set the .tf command to pull <i> tweets from them. Configuration is saved.')
+	time.sleep(0.25)
 	chat(sender, '    .gt <[@]user> [i]   - I will send you <username>\'s <i>th latest tweet.')
+	time.sleep(0.25)
 	chat(sender, '    .mail <nick> <msg>  - I will relay <message> to <handle> the next time they join our channel or run .inbox.')
+	time.sleep(0.25)
 	chat(sender, '    .inbox              - I will reply with any messages mailed to you since the last .inbox execution.')
+	time.sleep(0.25)
 	chat(sender, '--Bot Operators Only--')
+	time.sleep(0.25)
 	chat(sender, '    .reboot             - I will disconnect and reconnect to IRC.')
+	time.sleep(0.25)
 	chat(sender, '    .dm                 - I will read out my newest twitter DMs.')
+	time.sleep(0.25)
 	chat(sender, '    .dm <[@]user> <msg> - I will send <username> a twitter DM.')
 
 # Retrieves tweets from various users
 def get_twitter_feed(sender):
 	global data_map
 	for info in data_map['twitter_subs'][sender]:
-		print 'info: ' + str(info)
 		username = info[0]
 		index = info[1]
 		while index > 0:
@@ -425,7 +441,18 @@ def get_twitter_feed(sender):
 			except:
 				chat(sender, "FAILED to get @%s's %s most recent tweet!" % (username, format_ordinal(index)))
 			index -= 1
+			time.sleep(0.2)
 
+# Sets the provided arguments under the sender's twitter feed configuration
+def update_tf_config(sender, args):
+	array = []
+	for index in range(len(args)):
+		if index % 2 == 1: # Odd number, to skip <i> (see send_help_dialogue())
+			continue
+		array.append([args[index].replace('@', ''), int(args[index+1])]) # Append [user, i]
+	data_map['twitter_subs'].update({sender : array})
+	save_data()
+	chat(sender, 'Your configuration has been updated. Run .tf to try!')
 
 ##############################################
 ####                                      ####
@@ -435,7 +462,7 @@ def get_twitter_feed(sender):
 ##############################################
 
 def loop():
-	global connected, timeout, data_map, last_DM_check
+	global connected, timeout, data_map, last_DM_check, closing
 	signal = select.select([irc_socket], [], [], 10.0)
 	millis = int(round(time.time() * 1000))
 	if connected and (last_DM_check + int(config_options['twitter_DM_interval'])) <= millis:
@@ -449,7 +476,7 @@ def loop():
 			irc_socket.send('QUIT\r\n')
 			debug("No Pings Received: REBOOT", True)
 			closing = True
-			exit(0)
+			exit()
 		return
 	timeout = 0
 	if len(data) > 0:
@@ -481,7 +508,7 @@ def loop():
 	if message[0] == '.':
 		parse_cmd(sender, destination, message)
 	elif '\x66\x75\x63\x6B\x20\x79\x6F\x75' in message.lower():
-		chat(sender, "No thanks, I don't want Herpes.")
+		chat(sender, "No thanks, I don't want Herpes.") # Sassy Bot
 
 
 def run():
@@ -489,7 +516,7 @@ def run():
 		print "Invalid Checksum! Quitting..."
 		exit(1)
 	print "Checksum Validation Succeeded"
-	global irc_socket
+	global irc_socket, closing
 	init()
 	if config_options['tor_enabled'] == 'YES':
 		socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 9050, True)
@@ -520,8 +547,6 @@ def run():
 run()
 
 ## BELOW ARE TESTING CALLS.
-
-# init()
 # auth_twitter()
 # for tweet in twitter_api.search(q='Shiina42_TR'): # Finds every tweet containing #Shiina42_TR
 	# print tweet.text
