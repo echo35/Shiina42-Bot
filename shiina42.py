@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 # AUTHOR: Kagami95 (https://github.com/Kagami95)
-# @v_sha512 'cd4f2fb4aacf1366859e95a1d9c3bcd6d8465a2a3815b31034f38fed2501816b3929610d88640e124f5f16f89608b27ec2b41027120b600e24a73ff50a612550'
+# @v_sha512 '0c56cfad3bc4b15013187ebd915ee5d2ddf02c19ac73f0afe510d8c443f9d49dbbc806b4809a1b76fab135a3730c59f4e9c8492b529418ada1c22861910cc6e7'
 
 import time, socket, os, ssl, socks, hashlib, re, select, tweepy
 from datetime import datetime
@@ -311,13 +311,14 @@ def read_mail(sender):
 	if sender in mail_list:
 		res = "You have 1 new message:"
 		if len(mail_list[sender]) != 1:
-			res = "You have %d new messages:" % (len(mail_list[sender]))
+			res = "You have %d new messages: " % (len(mail_list[sender]))
+		chat(sender, res)
 		for mail in mail_list[sender]:
-			res += "%s: %s" % (mail[0], mail[1])
+			chat(sender, "%s: %s" % (mail[0], mail[1]))
 		del mail_list[sender]
 		save_mail()
-		return res
-	return "You have no new messages!"
+	else:
+		chat(sender, "You have no new messages!")
 
 def send_DM(sender, rcpt, message):
 	try:
@@ -339,7 +340,7 @@ def parse_cmd(sender, destination, message):
 		if simplify(message) == 'ping': # ".ping"
 			chat(sender, 'Pong')
 		elif simplify(message)[:5] == 'inbox': # ".inbox"
-			chat(read_mail(sender))
+			read_mail(sender)
 		elif simplify(message)[:4] == 'send' or simplify(message)[:4] == 'mail': # ".send", ".mail"
 			if len(simplify(message)) == 4:
 				chat(sender, 'Aliases: [send, mail]; Usage: send <handle> <message>')
