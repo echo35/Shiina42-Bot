@@ -10,14 +10,15 @@ IRC-Based Polyfunctional Bot written in Python 2.7
 - [x] Clean code
 - [x] Checksum validation at startup
 - [x] Restart on IRC ping timeout
-- [ ] Add standalone relaunching function (currently relies on bash loop)
+- [x] Add ability to reload configuration on the fly
 - [x] Custom IRC settings (server, port, default channel, nickname)
 - [x] Implement IRC Nickserv authentication
-- [ ] Make SSL optional (currently forced)
+- [x] Make SSL optional (currently forced)
 - [x] Configure DAT file through IRC chat
-- [ ] Implement disabling of features (`*-enabled = "NO"` in config)
+- [x] Implement disabling of features (`*-enabled = "NO"` in config)
 - [x] Tor Support `tor-enabled` in shiina42.cfg
 - [ ] Custom proxy support
+- [x] Add support for multiple channels
 - [x] Hook into Twitter API
 	- [x] Manage Twitter DMs (user controlled)
 	- [ ] Automatic DM replies
