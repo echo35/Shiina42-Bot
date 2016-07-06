@@ -1,18 +1,49 @@
 #!/usr/bin/env python2
 
 # AUTHOR: Kagami95 (https://github.com/Kagami95)
-# @v_sha512 '0c56cfad3bc4b15013187ebd915ee5d2ddf02c19ac73f0afe510d8c443f9d49dbbc806b4809a1b76fab135a3730c59f4e9c8492b529418ada1c22861910cc6e7'
+# @v_sha512 'debfb0f99a637d1c235f10095e6b99cb720b715d9b7d63eb50085672f7c22b8c9eef23bf094961fb7f3c279f8f385011d49c3b076b964c417daec142b6372b04'
 
-import time, socket, os, ssl, socks, hashlib, re, select, tweepy
+import time, socket, os, ssl, socks, hashlib, re, select, tweepy, platform
 from datetime import datetime
 from imgurpython import ImgurClient
 
 # General Variables
 bot_name = 'shiina42'
+terminated = False
 debug_enabled = True
 data_map = {}
 config_options = {}
-default_config = [ '# Shiina42 is a polyfunctional bot developped by Kagami95. http://github.com/Kagami95\n\n', '\n# General Configuration\n' 'creator = ""\n', 'tor_enabled = "NO"\n', '\n# IRC Configuration\n', 'irc_enabled = "YES"\n', 'irc_server = ""\n', 'irc_port = 6697\n', 'irc_channel = "#"\n', 'irc_nickname = ""\n', 'irc_password = ""\n', '\n# Twitter Configuration\n', 'twitter_enabled = "NO"\n', 'twitter_DM_interval = 60000\n' 'twitter_ckey = ""\n', 'twitter_secret = ""\n', 'twitter_atoken = ""\n', 'twitter_atoken_secret = ""\n', '\n# Imgur Configuration\n', 'imgur_enabled = "NO"\n', 'imgur_id = ""\n', 'imgur_secret = ""\n']
+#default_config = [ '# Shiina42 is a polyfunctional bot developped by Kagami95. http://github.com/Kagami95\n\n', '\n# General Configuration\n' 'creator = ""\n', 'tor_enabled = "NO"\n', '\n# IRC Configuration\n', 'irc_enabled = "YES"\n', 'irc_server = ""\n', 'irc_port = 6697\n', 'irc_channel = "#"\n', 'irc_nickname = ""\n', 'irc_password = ""\n', '\n# Twitter Configuration\n', 'twitter_enabled = "NO"\n', 'twitter_DM_interval = 60000\n' 'twitter_ckey = ""\n', 'twitter_secret = ""\n', 'twitter_atoken = ""\n', 'twitter_atoken_secret = ""\n', '\n# Imgur Configuration\n', 'imgur_enabled = "NO"\n', 'imgur_id = ""\n', 'imgur_secret = ""\n']
+default_config = '''# Shiina42 is a polyfunctional bot developped by Kagami95. http://github.com/Kagami95
+
+
+# General Configuration
+creator = ""
+tor_enabled = "NO"
+ssl_enabled = "NO"
+
+# IRC Configuration
+irc_server = ""
+irc_port = 6667
+irc_channels = ""
+irc_nickname = "shiina42"
+irc_password = ""
+
+# Twitter Configuration
+twitter_enabled = "NO"
+twitter_DM_interval = 60000
+twitter_ckey = ""
+twitter_secret = ""
+twitter_atoken = ""
+twitter_atoken_secret = ""
+
+# Imgur Configuration
+imgur_enabled = "NO"
+imgur_id = ""
+imgur_secret = ""
+
+'''
+
 
 # IRC-Bot Variables
 mail_list = {}
@@ -106,7 +137,7 @@ def create_config():
 		info[0] = True
 		info.append(bot_name + '.cfg')
 		with open('%s.cfg' % bot_name, 'w') as file:
-			file.writelines(default_config)
+			file.write(default_config)
 	if not os.path.exists(bot_name + '.dat'):
 #		info[0] = True
 		# info.append(bot_name + '.dat')
@@ -128,6 +159,10 @@ def load_config():
 			if len(line) <= 1 or line[0] == '#':
 				continue
 			options = line.replace('"', '').replace('\n', '').split(' = ')
+			if options[1] == "YES":
+				options[1] = True
+			elif options[1] == "NO":
+				options[1] = False
 			config_options.update({options[0] : options[1]})
 			print ('Set %s to %s' % (options[0], options[1]))
 		except:
@@ -144,34 +179,43 @@ def load_data():
 
 # Authenticates with Imgur
 def auth_imgur():
-	global imgur_client
-	imgur_client = ImgurClient(config_options['imgur_id'], config_options['imgur_secret'])
+	if config_options['imgur_enabled']:
+		global imgur_client
+		imgur_client = ImgurClient(config_options['imgur_id'], config_options['imgur_secret'])
 
 # Authenticates with Twitter
 def auth_twitter():
-	global twitter_api
-	auth = tweepy.OAuthHandler(config_options['twitter_ckey'], config_options['twitter_secret'])
-	auth.set_access_token(config_options['twitter_atoken'], config_options['twitter_atoken_secret'])
-	twitter_api = tweepy.API(auth)
+	if config_options['twitter_enabled']:
+		global twitter_api
+		auth = tweepy.OAuthHandler(config_options['twitter_ckey'], config_options['twitter_secret'])
+		auth.set_access_token(config_options['twitter_atoken'], config_options['twitter_atoken_secret'])
+		twitter_api = tweepy.API(auth)
 
 # Connects to IRC server
 def connect():
 	global irc_socket
 	irc_server = config_options['irc_server']
 	irc_port = int(config_options['irc_port'])
-	irc_password = config_options['irc_password']
-	irc_channel = config_options['irc_channel']
 	irc_nickname = config_options['irc_nickname']
 
 	debug('Connecting to %s:%s...' % (config_options['irc_server'], config_options['irc_port']), log)
 	irc_socket.connect ((irc_server, irc_port))
-	irc_socket = ssl.wrap_socket(irc_socket, ssl_version=ssl.PROTOCOL_TLSv1, ciphers="ALL")
+
+	if config_options['ssl_enabled']:
+		irc_socket = ssl.wrap_socket(irc_socket, ssl_version=ssl.PROTOCOL_TLSv1, ciphers="ALL")
 
 	irc_socket.send('NICK %s\r\n' % (irc_nickname))
 	irc_socket.send ('USER %s %s %s :IRC Bot\r\n' % (irc_nickname, irc_nickname, irc_nickname))
 
 	irc_socket.setblocking(0)
 
+def join_channels():
+	for channel in config_options['irc_channels'].split():
+		irc_socket.send('JOIN %s\r\n' % (channel))
+
+def part_channels():
+	for channel in config_options['irc_channels'].split():
+		irc_socket.send('PART %s\r\n' % (channel))
 
 ##############################################
 ####                                      ####
@@ -210,6 +254,11 @@ def is_op(handle):
 			if line.replace('\n', '') == handle:
 				return True
 	return False
+
+# Pings a host and returns True if up, False if down. Source: http://stackoverflow.com/a/32684938
+def ping(host):
+    ping_str = "-n 1" if  platform.system().lower()=="windows" else "-c 1"
+    return os.system("ping " + ping_str + " " + host) == 0
 
 # Strips string of all non-alphanumeric characters (except 0x0A), returns lowercase
 def simplify(string):
@@ -287,6 +336,13 @@ def chat(channel, msg):
 	except:
 		None
 
+# Changes bot's nickname, password may be blank!
+def change_nick(new_nick, password):
+	irc_socket.send('NICK %s\r\n' % (new_nick))
+	if len(password) > 0:
+		chat('NickServ', 'IDENTIFY %s' % (password))
+
+
 ##############################################
 ####                                      ####
 ###           END UTIL FUNCTIONS           ###
@@ -331,13 +387,13 @@ def send_DM(sender, rcpt, message):
 
 # Parses a command, making decisions
 def parse_cmd(sender, destination, message):
-	global closing
+	global terminated
 	debug("Command from %s: %s" % (sender, message), False)
 	try:
 		message = message.replace('\r\n', '')
 		if simplify(message) == 'help': # ".help"
 			send_help_dialogue(sender)
-		if simplify(message) == 'ping': # ".ping"
+		elif simplify(message) == 'ping': # ".ping"
 			chat(sender, 'Pong')
 		elif simplify(message)[:5] == 'inbox': # ".inbox"
 			read_mail(sender)
@@ -348,6 +404,9 @@ def parse_cmd(sender, destination, message):
 			new_mail(sender, message.split(' ')[1], message[4+3+len(message.split(' ')[1]):])
 			chat(sender, 'Your message will be relayed to %s the next time they run the .inbox command!' % (message.split(' ')[1]))
 		elif simplify(message)[:2] == 'gt':
+			if not config_options['twitter_enabled']:
+				chat(sender, 'Twitter functionality is disabled!')
+				return
 			if len(message.split()) == 2:
 				username = message.split()[1].replace('@', '')
 				print username
@@ -367,12 +426,31 @@ def parse_cmd(sender, destination, message):
 				ordinal = format_ordinal(index)
 				chat(sender, "%s most recent tweet by @%s: %s" % (ordinal, username, tweet.text.encode('utf-8')))
 		elif simplify(message) == 'tf': # ".tf" twitter feed
+			if not config_options['twitter_enabled']:
+				chat(sender, 'Twitter functionality is disabled!')
+				return
 			get_twitter_feed(sender)
 		elif simplify(message)[:2] == 'tf': # Missed previous conditional, therefore has arguments
+			if not config_options['twitter_enabled']:
+				chat(sender, 'Twitter functionality is disabled!')
+				return
 			args = message.split()[1:]
 			update_tf_config(sender, args)
+		elif simplify(message)[:4] == 'echo': # ".echo"
+			if is_op(sender):
+				if len(message.split()) < 3:
+					chat(sender, 'Usage: .echo <#channel|nick> <message>')
+					return
+				if not message.split()[1] in config_options['irc_channels']:
+					chat(sender, 'I am not in that channel!')
+				chat(message.split()[1], ' '.join(message.split()[2:]))
+			else:
+				chat(sender, 'You don\' have permission to use my voice!')
 		elif simplify(message)[:2] == 'dm': # ".dm" Direct Message (Twitter)
 			if is_op(sender):
+				if not config_options['twitter_enabled']:
+					chat(sender, 'Twitter functionality is disabled!')
+					return
 				if simplify(message) == "dm":
 					if not check_DM(sender):
 						chat(sender, "No New Messages")
@@ -384,11 +462,21 @@ def parse_cmd(sender, destination, message):
 					send_DM(sender, recipient, text)
 			else:
 				chat(sender, 'You don\'t have permission to access DMs!')
-		elif simplify(message) == 'reboot': # ".reboot"
+		elif simplify(message) == 'reload': # ".reload"
+			if is_op(sender.replace('@', '')):
+				part_channels()
+				init()
+				change_nick(config_options['irc_nickname'], config_options['irc_password'])
+				join_channels()
+				chat(sender, 'The config and data were reloaded!')
+				return
+			else:
+				chat(sender, 'You don\'t have access to that command!')
+		elif simplify(message) == 'poweroff': # ".poweroff"
 			if is_op(sender.replace('@', '')):
 				irc_socket.send('QUIT\r\n')
-				closing = True
-				exit()
+				terminated = True
+				return
 			else:
 				chat(sender, 'You don\'t have access to that command!')
 		else:
@@ -419,14 +507,19 @@ def send_help_dialogue(sender):
 	chat(sender, '    .mail <nick> <msg>  - I will relay <message> to <handle> the next time they join our channel or run .inbox.')
 	time.sleep(0.25)
 	chat(sender, '    .inbox              - I will reply with any messages mailed to you since the last .inbox execution.')
-	time.sleep(0.25)
-	chat(sender, '--Bot Operators Only--')
-	time.sleep(0.25)
-	chat(sender, '    .reboot             - I will disconnect and reconnect to IRC.')
-	time.sleep(0.25)
-	chat(sender, '    .dm                 - I will read out my newest twitter DMs.')
-	time.sleep(0.25)
-	chat(sender, '    .dm <[@]user> <msg> - I will send <username> a twitter DM.')
+	if is_op(sender):
+		time.sleep(0.25)
+		chat(sender, '--Bot Operators Only-- (you are a bot operator)')
+		time.sleep(0.25)
+		chat(sender, '    .reload                - I will re-read my configuration files and update my variables.')
+		time.sleep(0.25)
+		chat(sender, '    .poweroff              - I will disconnect from IRC.')
+		time.sleep(0.25)
+		chat(sender, '    .echo <#ch|nick> <msg> - I will relay <msg> to channel <#ch> or user <nick>.')
+		time.sleep(0.25)
+		chat(sender, '    .dm                    - I will read out my newest twitter DMs.')
+		time.sleep(0.25)
+		chat(sender, '    .dm <[@]user> <msg>    - I will send <username> a twitter DM.')
 
 # Retrieves tweets from various users
 def get_twitter_feed(sender):
@@ -453,7 +546,7 @@ def update_tf_config(sender, args):
 		array.append([args[index].replace('@', ''), int(args[index+1])]) # Append [user, i]
 	data_map['twitter_subs'].update({sender : array})
 	save_data()
-	chat(sender, 'Your configuration has been updated. Run .tf to try!')
+	chat(sender, 'Your settings has been updated. Run .tf to try!')
 
 ##############################################
 ####                                      ####
@@ -466,22 +559,27 @@ def loop():
 	global connected, timeout, data_map, last_DM_check, closing
 	signal = select.select([irc_socket], [], [], 10.0)
 	millis = int(round(time.time() * 1000))
-	if connected and (last_DM_check + int(config_options['twitter_DM_interval'])) <= millis:
+	if connected and config_options['twitter_enabled'] and (last_DM_check + int(config_options['twitter_DM_interval'])) <= millis:
 		last_DM_check = millis
 		check_DM(config_options['creator'])
 	if signal[0]:
 		data = irc_socket.recv(4096)
 	else:
 		timeout += 1
-		if timeout >= 34:
-			irc_socket.send('QUIT\r\n')
-			debug("No Pings Received: REBOOT", True)
-			closing = True
-			exit()
+		if timeout >= 2:
+			print 'am I online??'
+			chat(config_options['irc_nickname'], 'am i online?')
+			signal = select.select([irc_socket], [], [], 2.0)
+			if not signal[0]:
+				irc_socket.send('QUIT\r\n')
+				debug("I'm not online: REBOOT", True)
+				terminated = True
+				return
+			timeout = 0
 		return
 	timeout = 0
 	if len(data) > 0:
-		debug(data.decode('utf-8'), False)
+		debug(data.decode('utf-8'), ('NOTICE' in data))
 	if data.find('PING') != -1:
 		cmd = 'PONG ' + data.split()[1] + '\r\n'
 		debug(cmd, False)
@@ -490,12 +588,14 @@ def loop():
 		connected = True
 		if len(config_options['irc_password']) != 0:
 			chat('NickServ', 'IDENTIFY %s' % (config_options['irc_password']))
-		irc_socket.send('JOIN %s\r\n' % (config_options['irc_channel']))
+		join_channels()
 		debug("Connected!", False)
 		last_DM_check = millis
 		return
 	if not connected:
 		return
+	if data.find('already in use') != -1:
+		change_nick()
 	if data.find('JOIN ') != -1:
 		sender = (str(data)[1:].split('!')[0])
 		chat(sender, read_mail(sender))
@@ -517,24 +617,21 @@ def run():
 		print "Invalid Checksum! Quitting..."
 		exit(1)
 	print "Checksum Validation Succeeded"
-	global irc_socket, closing
+	global irc_socket, terminated
 	init()
 	if config_options['tor_enabled'] == 'YES':
 		socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 9050, True)
 		socket.socket = socks.socksocket
 	irc_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	while True:
-		res = os.system("ping -c 1 %s" % (config_options['irc_server']))
-		if res == 0:
+		if ping(config_options['irc_server']):
 			break
 	connect()
 	while True:
 		try:
-			if(closing):
-				break
 			loop()
-		except (KeyboardInterrupt, SystemExit):
-			break
+			if terminated:
+				break
 		except:
 			continue
 
