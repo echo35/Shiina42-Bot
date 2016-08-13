@@ -1,9 +1,9 @@
 #!/usr/bin/env python2
 
 # AUTHOR: Kagami95 (https://github.com/Kagami95)
-# @v_sha512 'debfb0f99a637d1c235f10095e6b99cb720b715d9b7d63eb50085672f7c22b8c9eef23bf094961fb7f3c279f8f385011d49c3b076b964c417daec142b6372b04'
+# @v_sha512 'e5230185d50262d0ebd1c980dd2b5bc75f557f91f856e49ce557dfb64d6161ed917f6d7447b6a523409ae8312c272060c2b17c0348d2f5a082614ac8456a5545'
 
-import time, socket, os, ssl, socks, hashlib, re, select, tweepy, platform
+import time, socket, os, ssl, socks, hashlib, re, select, tweepy
 from datetime import datetime
 from imgurpython import ImgurClient
 
@@ -13,7 +13,6 @@ terminated = False
 debug_enabled = True
 data_map = {}
 config_options = {}
-#default_config = [ '# Shiina42 is a polyfunctional bot developped by Kagami95. http://github.com/Kagami95\n\n', '\n# General Configuration\n' 'creator = ""\n', 'tor_enabled = "NO"\n', '\n# IRC Configuration\n', 'irc_enabled = "YES"\n', 'irc_server = ""\n', 'irc_port = 6697\n', 'irc_channel = "#"\n', 'irc_nickname = ""\n', 'irc_password = ""\n', '\n# Twitter Configuration\n', 'twitter_enabled = "NO"\n', 'twitter_DM_interval = 60000\n' 'twitter_ckey = ""\n', 'twitter_secret = ""\n', 'twitter_atoken = ""\n', 'twitter_atoken_secret = ""\n', '\n# Imgur Configuration\n', 'imgur_enabled = "NO"\n', 'imgur_id = ""\n', 'imgur_secret = ""\n']
 default_config = '''# Shiina42 is a polyfunctional bot developped by Kagami95. http://github.com/Kagami95
 
 
@@ -43,7 +42,6 @@ imgur_id = ""
 imgur_secret = ""
 
 '''
-
 
 # IRC-Bot Variables
 mail_list = {}
@@ -205,7 +203,7 @@ def connect():
 		irc_socket = ssl.wrap_socket(irc_socket, ssl_version=ssl.PROTOCOL_TLSv1, ciphers="ALL")
 
 	irc_socket.send('NICK %s\r\n' % (irc_nickname))
-	irc_socket.send ('USER %s %s %s :IRC Bot\r\n' % (irc_nickname, irc_nickname, irc_nickname))
+	irc_socket.send ('USER %s %s %s :Mashiro Shiina (Bot)\r\n' % (irc_nickname, irc_nickname, irc_nickname))
 
 	irc_socket.setblocking(0)
 
@@ -385,100 +383,181 @@ def send_DM(sender, rcpt, message):
 		if ex[0][0]['code'] == 150:
 			chat(sender, "You can only DM people who follow you!")
 
+# Accesses user config
+def command_cfg(sender, message):
+	if len(message.split(' ')) == 2:
+		setting = message.split(' ')[1]
+		if setting in data_map:
+			chat(sender, "{0} = {1}".format(setting, str(data_map[setting][sender])))
+		else:
+			chat(sender, "That setting does not exist!")
+	elif len(message.split(' ')) >= 3:
+		setting = message.split(' ')[1]
+		if setting in ['greeting', 'audio_msg']:
+			data_map[setting][sender] = str(' '.join(message.split(' ')[2:]))
+			save_data()
+			chat(sender, "{0} = {1}".format(setting, str(data_map[setting][sender])))
+		else:
+			chat(sender, "That setting does not exist!")
+	else:
+		chat(sender, 'Usage: .cfg <setting> [value]')
+
+# Sends mail to other user
+def command_mail(sender, message):
+	if len(simplify(message)) == 4:
+		chat(sender, 'Aliases: [send, mail]; Usage: send <handle> <message>')
+		return
+	new_mail(sender, message.split(' ')[1], message[4+3+len(message.split(' ')[1]):])
+	chat(sender, 'Your message will be relayed to %s the next time they run the .inbox command!' % (message.split(' ')[1]))
+
+# Converts temperature
+def command_convert(sender, destination, message):
+	if len(message.split(' ')) > 2:
+		quantum = message.split(' ')[1]
+		for i in message.split(' ')[2:]:
+			unit = i[-1]
+			try:
+				if quantum == 'temp':
+					answer = 0
+					answer_unit = ''
+					if unit == 'C':
+						answer_unit = 'F'
+						answer = 9/5. * float(i[:-1]) + 32
+					elif unit == 'F':
+						answer_unit = 'C'
+						answer = 5/9. * (float(i[:-1]) - 32)
+					else:
+						chat(destination, 'Unknown unit: ' + unit)
+						continue
+					chat(destination, '%s = %.2f%s' % (i, unit, answer, answer_unit))
+			except:
+				chat(destination, '%s is not a valid number' % i)
+			time.sleep(0.2)
+
+# Gets tweet from user
+def command_gt(sender ,destination, message):
+	if not config_options['twitter_enabled']:
+		chat(sender, 'Twitter functionality is disabled!')
+		return
+	if len(message.split()) == 2:
+		username = message.split()[1].replace('@', '')
+		print username
+		tweet = get_tweet(username, 1)
+		if tweet == None:
+			chat(sender, "Tweet not found!")
+		chat(sender, "Latest tweet by @%s: %s" % (username, tweet.text.encode('utf-8')))
+	elif len(message.split()) == 3:
+		username = message.split()[1].replace('@', '')
+		index = int(message.split()[2])
+		if index < 1:
+			chat(sender, "Usage: gt <username> [index >= 1]")
+			return
+		tweet = get_tweet(username, index)
+		if tweet == None:
+			chat(sender, "Tweet not found!")
+		ordinal = format_ordinal(index)
+		chat(sender, "%s most recent tweet by @%s: %s" % (ordinal, username, tweet.text.encode('utf-8')))
+
+# Fetches twitter feed
+def command_tf1(sender):
+	if not config_options['twitter_enabled']:
+		chat(sender, 'Twitter functionality is disabled!')
+		return
+	get_twitter_feed(sender)
+
+# Configures twitter feed
+def command_tf2(sender, message):
+	if not config_options['twitter_enabled']:
+		chat(sender, 'Twitter functionality is disabled!')
+		return
+	args = message.split()[1:]
+	update_tf_config(sender, args)
+
+# Repeats text in channel
+def command_echo(sender, message):
+	if is_op(sender):
+		if len(message.split()) < 3:
+			chat(sender, 'Usage: .echo <#channel|nick> <message>')
+			return
+		if message.split()[1][0] == '#' and not message.split()[1] in config_options['irc_channels']:
+			chat(sender, 'I am not in that channel!')
+		chat(message.split()[1], ' '.join(message.split()[2:]))
+	else:
+		chat(sender, 'You don\' have permission to use my voice!')
+
+# Sends out twitter DM
+def command_dm(sender, message):
+	if is_op(sender):
+		if not config_options['twitter_enabled']:
+			chat(sender, 'Twitter functionality is disabled!')
+			return
+		if simplify(message) == "dm":
+			if not check_DM(sender):
+				chat(sender, "No New Messages")
+		elif len(message.split()) < 3:
+			chat(sender, "Usage: dm <recipient> <message>")
+		else:
+			recipient = message.split()[1]
+			text = ''.join(message[2+2+len(recipient):])
+			send_DM(sender, recipient, text)
+	else:
+		chat(sender, 'You don\'t have permission to access DMs!')
+
+# Reloads bot configuration
+def command_reload(sender):
+	if is_op(sender.replace('@', '')):
+		part_channels()
+		init()
+		change_nick(config_options['irc_nickname'], config_options['irc_password'])
+		join_channels()
+		chat(sender, 'The config and data were reloaded!')
+		return
+	else:
+		chat(sender, 'You don\'t have access to that command!')
+
+# Powers off bot (bash loop will relaunch)
+def command_poweroff(sender):
+	global terminated
+	if is_op(sender.replace('@', '')):
+		irc_socket.send('QUIT\r\n')
+		terminated = True
+		return
+	else:
+		chat(sender, 'You don\'t have access to that command!')
+
 # Parses a command, making decisions
 def parse_cmd(sender, destination, message):
-	global terminated
 	debug("Command from %s: %s" % (sender, message), False)
+	if destination == config_options['irc_nickname']:
+		destination = sender
 	try:
 		message = message.replace('\r\n', '')
 		if simplify(message) == 'help': # ".help"
 			send_help_dialogue(sender)
 		elif simplify(message) == 'ping': # ".ping"
-			chat(sender, 'Pong')
+			chat(destination, 'Pong')
 		elif simplify(message)[:5] == 'inbox': # ".inbox"
 			read_mail(sender)
+		elif simplify(message)[:7] == 'convert':
+			command_convert(sender, destination, message)
 		elif simplify(message)[:4] == 'send' or simplify(message)[:4] == 'mail': # ".send", ".mail"
-			if len(simplify(message)) == 4:
-				chat(sender, 'Aliases: [send, mail]; Usage: send <handle> <message>')
-				return
-			new_mail(sender, message.split(' ')[1], message[4+3+len(message.split(' ')[1]):])
-			chat(sender, 'Your message will be relayed to %s the next time they run the .inbox command!' % (message.split(' ')[1]))
+			command_mail(sender, message)
 		elif simplify(message)[:2] == 'gt':
-			if not config_options['twitter_enabled']:
-				chat(sender, 'Twitter functionality is disabled!')
-				return
-			if len(message.split()) == 2:
-				username = message.split()[1].replace('@', '')
-				print username
-				tweet = get_tweet(username, 1)
-				if tweet == None:
-					chat(sender, "Tweet not found!")
-				chat(sender, "Latest tweet by @%s: %s" % (username, tweet.text.encode('utf-8')))
-			elif len(message.split()) == 3:
-				username = message.split()[1].replace('@', '')
-				index = int(message.split()[2])
-				if index < 1:
-					chat(sender, "Usage: gt <username> [index >= 1]")
-					return
-				tweet = get_tweet(username, index)
-				if tweet == None:
-					chat(sender, "Tweet not found!")
-				ordinal = format_ordinal(index)
-				chat(sender, "%s most recent tweet by @%s: %s" % (ordinal, username, tweet.text.encode('utf-8')))
+			command_gt(sender, destination, message)
 		elif simplify(message) == 'tf': # ".tf" twitter feed
-			if not config_options['twitter_enabled']:
-				chat(sender, 'Twitter functionality is disabled!')
-				return
-			get_twitter_feed(sender)
+			command_tf1(sender)
 		elif simplify(message)[:2] == 'tf': # Missed previous conditional, therefore has arguments
-			if not config_options['twitter_enabled']:
-				chat(sender, 'Twitter functionality is disabled!')
-				return
-			args = message.split()[1:]
-			update_tf_config(sender, args)
+			command_tf2(sender, message)
 		elif simplify(message)[:4] == 'echo': # ".echo"
-			if is_op(sender):
-				if len(message.split()) < 3:
-					chat(sender, 'Usage: .echo <#channel|nick> <message>')
-					return
-				if not message.split()[1] in config_options['irc_channels']:
-					chat(sender, 'I am not in that channel!')
-				chat(message.split()[1], ' '.join(message.split()[2:]))
-			else:
-				chat(sender, 'You don\' have permission to use my voice!')
+			command_echo(sender, message)
 		elif simplify(message)[:2] == 'dm': # ".dm" Direct Message (Twitter)
-			if is_op(sender):
-				if not config_options['twitter_enabled']:
-					chat(sender, 'Twitter functionality is disabled!')
-					return
-				if simplify(message) == "dm":
-					if not check_DM(sender):
-						chat(sender, "No New Messages")
-				elif len(message.split()) < 3:
-					chat(sender, "Usage: dm <recipient> <message>")
-				else:
-					recipient = message.split()[1]
-					text = ''.join(message[2+2+len(recipient):])
-					send_DM(sender, recipient, text)
-			else:
-				chat(sender, 'You don\'t have permission to access DMs!')
+			command_dm(sender, message)
+		elif simplify(message)[:3] == 'cfg':
+			command_cfg(sender, message)
 		elif simplify(message) == 'reload': # ".reload"
-			if is_op(sender.replace('@', '')):
-				part_channels()
-				init()
-				change_nick(config_options['irc_nickname'], config_options['irc_password'])
-				join_channels()
-				chat(sender, 'The config and data were reloaded!')
-				return
-			else:
-				chat(sender, 'You don\'t have access to that command!')
+			command_reload(sender)
 		elif simplify(message) == 'poweroff': # ".poweroff"
-			if is_op(sender.replace('@', '')):
-				irc_socket.send('QUIT\r\n')
-				terminated = True
-				return
-			else:
-				chat(sender, 'You don\'t have access to that command!')
+			command_poweroff(sender)
 		else:
 			return
 
@@ -507,6 +586,12 @@ def send_help_dialogue(sender):
 	chat(sender, '    .mail <nick> <msg>  - I will relay <message> to <handle> the next time they join our channel or run .inbox.')
 	time.sleep(0.25)
 	chat(sender, '    .inbox              - I will reply with any messages mailed to you since the last .inbox execution.')
+	time.sleep(0.25)
+	chat(sender, '    .cfg <set>          - I will read out your personal settings for <val>.')
+	time.sleep(0.25)
+	chat(sender, '    .cfg <set> <val>    - I will adjust your personal settings for <set> to <val>.')
+	time.sleep(0.25)
+	chat(sender, '    .convert <q> <n1>   - I will convert <n1> to another unit of <q>. Options for <q>: "temp"')
 	if is_op(sender):
 		time.sleep(0.25)
 		chat(sender, '--Bot Operators Only-- (you are a bot operator)')
@@ -520,6 +605,8 @@ def send_help_dialogue(sender):
 		chat(sender, '    .dm                    - I will read out my newest twitter DMs.')
 		time.sleep(0.25)
 		chat(sender, '    .dm <[@]user> <msg>    - I will send <username> a twitter DM.')
+		time.sleep(0.25)
+		chat(sender, '    .chat <#ch> <on|off>   - Controls whether or not I will try to chatbot on #ch.')
 
 # Retrieves tweets from various users
 def get_twitter_feed(sender):
@@ -565,17 +652,8 @@ def loop():
 	if signal[0]:
 		data = irc_socket.recv(4096)
 	else:
-		timeout += 1
-		if timeout >= 2:
-			print 'am I online??'
-			chat(config_options['irc_nickname'], 'am i online?')
-			signal = select.select([irc_socket], [], [], 2.0)
-			if not signal[0]:
-				irc_socket.send('QUIT\r\n')
-				debug("I'm not online: REBOOT", True)
-				terminated = True
-				return
-			timeout = 0
+		if data.find('QUIT') != -1 or data.find('Closing Link') != -1:
+			terminated = True
 		return
 	timeout = 0
 	if len(data) > 0:
@@ -599,23 +677,25 @@ def loop():
 	if data.find('JOIN ') != -1:
 		sender = (str(data)[1:].split('!')[0])
 		chat(sender, read_mail(sender))
+		if sender in data_map['greeting']:
+			channel = str(data).split()[2]
+			irc_socket.send('PRIVMSG %s :%s\r\n' % (channel, data_map['greeting'][sender].replace('%ACTION%', '\x01ACTION').replace('%SENDER%', sender)))
 		return
 	try:
 		sender = (str(data)[1:].split('!')[0])
-		destination = (str(data)).split('PRIVMSG')[1].split(' :')[0]
+		destination = (str(data)).split('PRIVMSG')[1].split(' :')[0].replace(' ', '')
 		message = (str(data)).split('PRIVMSG ')[1].split(' :')[1]
 	except:
 		return
 	if message[0] == '.':
 		parse_cmd(sender, destination, message)
 	elif '\x66\x75\x63\x6B\x20\x79\x6F\x75' in message.lower():
-		chat(sender, "No thanks, I don't want Herpes.") # Sassy Bot
-
+		chat(sender, "No thanks, \x49\x20\x64\x6F\x6E\x27\x74\x20\x77\x61\x6E\x74\x20\x48\x65\x72\x70\x65\x73\x2E") # Sassy Bot
 
 def run():
 	if not validate_checksum(True):
 		print "Invalid Checksum! Quitting..."
-		exit(1)
+		# exit(1)
 	print "Checksum Validation Succeeded"
 	global irc_socket, terminated
 	init()
