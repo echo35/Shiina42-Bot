@@ -19,6 +19,7 @@ IRC-Based Polyfunctional Bot written in Python 2.7
 - [x] Tor Support `tor-enabled` in shiina42.cfg
 - [ ] Custom proxy support
 - [x] Add support for multiple channels
+- [ ] Relay messages between channels
 - [x] Hook into Twitter API
 	- [x] Manage Twitter DMs (user controlled)
 	- [ ] Automatic DM replies
@@ -37,4 +38,5 @@ IRC-Based Polyfunctional Bot written in Python 2.7
 	- * Bing Translate API is very limited, but free plan exists
 	- [ ] Implement Bing Translate API
 	- [ ] Set user limitation for using translate functions
-- [ ] Make Shiina42 do stuff autonomously
+- [x] Make Shiina42 do stuff autonomously
+	- [x] Channel-join greetings
